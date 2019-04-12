@@ -3,9 +3,12 @@ sys.path.insert(0, '.')
 from nowcasting.helpers.ordered_easydict import OrderedEasyDict as edict
 import numpy as np
 import os
+import torch
 
 __C = edict()
 cfg = __C
+__C.GLOBAL = edict()
+__C.GLOBAL.DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 __C.ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 __C.HKO_DATA_BASE_PATH = os.path.join(__C.ROOT_DIR, 'hko_data')
 

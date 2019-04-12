@@ -9,6 +9,13 @@ def make_layers(block, no_relu_layers=[]):
             layer = nn.MaxPool2d(kernel_size=v[0], stride=v[1],
                                     padding=v[2])
             layers.append((layer_name, layer))
+        elif 'deconv' in layer_name:
+            transposeConv2d = nn.ConvTranspose2d(in_channels=v[0], out_channels=v[1],
+                                                 kernel_size=v[2], stride=v[3],
+                                                 padding=v[4])
+            layers.append((layer_name, transposeConv2d))
+            if layer_name not in no_relu_layers:
+                layers.append(('relu_' + layer_name, nn.ReLU(inplace=True)))
         elif 'conv' in layer_name:
             conv2d = nn.Conv2d(in_channels=v[0], out_channels=v[1],
                                kernel_size=v[2], stride=v[3],
@@ -16,13 +23,6 @@ def make_layers(block, no_relu_layers=[]):
             layers.append((layer_name, conv2d))
             if layer_name not in no_relu_layers:
                 layers.append(('relu_'+layer_name, nn.ReLU(inplace=True)))
-        elif 'deconv' in layer_name:
-            transposeConv2d = nn.ConvTranspose2d(in_channels=v[0], out_channels=v[1],
-                               kernel_size=v[2], stride=v[3],
-                               padding=v[4])
-            layers.append((layer_name, transposeConv2d))
-            if layer_name not in no_relu_layers:
-                layers.append(('relu_' + layer_name, nn.ReLU(inplace=True)))
         else:
             raise NotImplementedError
 

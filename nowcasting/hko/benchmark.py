@@ -266,7 +266,7 @@ class HKOBenchmarkEnv(object):
 
 if __name__ == '__main__':
     env = HKOBenchmarkEnv(pd_path=cfg.HKO_PD.RAINY_TEST, mode="fixed")
-    env._stat_dict['pred_seq_num'] = 10
+    # env._stat_dict['pred_seq_num'] = 10
     # print(env._stat_dict['pred_seq_num'])
     while not env.done:
         # Get the observation
@@ -275,7 +275,7 @@ if __name__ == '__main__':
         # Running your algorithm to get the prediction
         prediction = np.zeros_like(env._out_frame_dat)
         # Upload prediction to the environment
-        env.upload_prediction(prediction)
+        env.upload_prediction(prediction, save_result=True)
         # print(env._received_pred_seq_num)
     pod, far, csi, hss, gss, mse, mae, balanced_mse, balanced_mae, gdl = env._all_eval.calculate_stat()
     # print(env._all_eval.calculate_stat())
