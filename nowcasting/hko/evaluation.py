@@ -370,6 +370,7 @@ class HKOEvaluation(object):
         return pod, far, csi, hss, gss, mse, mae, balanced_mse, balanced_mae, gdl
 
     def print_stat_readable(self, prefix=""):
+        logging.getLogger().setLevel(logging.INFO)
         logging.info("%sTotal Sequence Number: %d, Use Central: %d"
                      %(prefix, self._total_batch_num, self._use_central))
         pod, far, csi, hss, gss, mse, mae, balanced_mse, balanced_mae, gdl = self.calculate_stat()

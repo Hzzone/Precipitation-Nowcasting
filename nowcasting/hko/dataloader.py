@@ -300,6 +300,8 @@ class HKOIterator(object):
                                   dtype=np.uint8)
         mask_dat = np.zeros((self._seq_len, batch_size, 1, self._height, self._width),
                                  dtype=np.bool)
+        if batch_size==0:
+            return frame_dat, mask_dat
         if self.sample_mode == "random":
             paths = []
             mask_paths = []
@@ -326,6 +328,7 @@ class HKOIterator(object):
             # Get the first_timestamp and the last_timestamp in the datetime_clips
             first_timestamp = datetime_clips[-1][-1]
             last_timestamp = datetime_clips[0][0]
+
             for i in range(self._seq_len):
                 for j in range(batch_size):
                     timestamp = datetime_clips[j][i]
