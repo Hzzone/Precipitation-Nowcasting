@@ -23,6 +23,10 @@ __C.HKO.EVALUATION.THRESHOLDS = np.array([0.5, 2, 5, 10, 30])
 __C.HKO.EVALUATION.CENTRAL_REGION = (120, 120, 360, 360)
 __C.HKO.EVALUATION.BALANCING_WEIGHTS = (1, 1, 2, 5, 10, 30)
 
+__C.HKO.EVALUATION.VALID_DATA_USE_UP = True
+# __C.HKO.EVALUATION.VALID_TIME = 100
+__C.HKO.EVALUATION.VALID_TIME = 20
+
 
 __C.HKO.BENCHMARK = edict()
 
@@ -60,3 +64,7 @@ __C.HKO.ITERATOR.WIDTH = 480
 __C.HKO.ITERATOR.HEIGHT = 480
 __C.HKO.ITERATOR.FILTER_RAINFALL = True           # Whether to discard part of the rainfall, has a denoising effect
 __C.HKO.ITERATOR.FILTER_RAINFALL_THRESHOLD = 0.28 # All the pixel values that are smaller than round(threshold * 255) will be discarded
+
+__C.MODEL = edict()
+from nowcasting.models.model import activation
+__C.MODEL.RNN_ACT_TYPE = activation('leaky', negative_slope=0.2, inplace=True)

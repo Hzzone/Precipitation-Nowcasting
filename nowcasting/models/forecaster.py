@@ -16,7 +16,7 @@ class Forecaster(nn.Module):
             setattr(self, 'stage' + str(self.blocks-index), make_layers(params))
 
     def forward_by_stage(self, input, state, subnet, rnn):
-        input, state_stage = rnn(input, state)
+        input, state_stage = rnn(input, state, seq_len=cfg.HKO.BENCHMARK.OUT_LEN)
         seq_number, batch_size, input_channel, height, width = input.size()
         input = torch.reshape(input, (-1, input_channel, height, width))
         input = subnet(input)
@@ -26,11 +26,10 @@ class Forecaster(nn.Module):
 
         # input: 5D S*B*I*H*W
 
-    def forward(self, hidden_states, size):
-        input = torch.zeros(([cfg.HKO.BENCHMARK.OUT_LEN] + list(size[1:]))).to(cfg.GLOBAL.DEVICE)
-        logging.debug(input.size())
-        for i in list(range(1, self.blocks + 1))[::-1]:
+    def forward(self, hidden_states):
+        input = self.forward_by_stage(None, hidden_states[-1], getattr(self, 'stage3'),
+                                      getattr(self, 'rnn3'))
+        for i in list(range(1, self.blocks))[::-1]:
             input = self.forward_by_stage(input, hidden_states[i-1], getattr(self, 'stage' + str(i)),
                                                        getattr(self, 'rnn' + str(i)))
-            logging.debug('input: {}, hidden states: {}'.format(input.size(), hidden_states[i-1][0].size()))
         return input
