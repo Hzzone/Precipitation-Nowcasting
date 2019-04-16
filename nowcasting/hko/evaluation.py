@@ -304,6 +304,7 @@ class HKOEvaluation(object):
                                               base_balancing_weights=cfg.HKO.EVALUATION.BALANCING_WEIGHTS,
                                               thresholds=self._thresholds)
         ## <2, <5, ... 不同权值的 MSE.
+        # S*B*1*H*W
         balanced_mse = (weights * np.square(pred - gt)).sum(axis=(2, 3, 4))
         balanced_mae = (weights * np.abs(pred - gt)).sum(axis=(2, 3, 4))
         gdl = get_GDL_numba(prediction=pred, truth=gt, mask=mask)

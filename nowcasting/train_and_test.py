@@ -29,9 +29,13 @@ def train_and_test(encoder_forecaster, optimizer, criterion, lr_scheduler, batch
                                      stride=cfg.HKO.BENCHMARK.STRIDE)
 
     train_loss = 0.0
-    model_save_dir = './models'
-    log_dir = './logs'
-    all_scalars_file_name = "all_scalars.json"
+    folder_name = os.path.dirname(__file__).split('/')[-1]
+    save_dir = osp.join(cfg.GLOBAL.MODEL_SAVE_DIR, folder_name)
+    if not os.path.exists(save_dir):
+        os.mkdir(save_dir)
+    model_save_dir = osp.join(save_dir, 'models')
+    log_dir = osp.join(save_dir, 'logs')
+    all_scalars_file_name = osp.join(save_dir, "all_scalars.json")
     if osp.exists(all_scalars_file_name):
         os.remove(all_scalars_file_name)
     if osp.exists(log_dir):

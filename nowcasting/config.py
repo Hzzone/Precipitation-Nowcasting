@@ -1,5 +1,3 @@
-import sys
-sys.path.insert(0, '.')
 from nowcasting.helpers.ordered_easydict import OrderedEasyDict as edict
 import numpy as np
 import os
@@ -10,15 +8,19 @@ cfg = __C
 __C.GLOBAL = edict()
 __C.GLOBAL.DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 __C.GLOBAL.BATCH_SZIE = 2
+for dirs in ['/home/hzzone/save', '/Users/hzzone/Downloads']:
+    if os.path.exists(dirs):
+        __C.GLOBAL.MODEL_SAVE_DIR = dirs
+assert __C.GLOBAL.MODEL_SAVE_DIR is not None
 
 
 __C.ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 __C.HKO_DATA_BASE_PATH = os.path.join(__C.ROOT_DIR, 'hko_data')
 
-for dirs in ['/Users/hzzone/Downloads/HKO-7_data/radarPNG', '/home/ubuntu/HKO-7/radarPNG']:
+for dirs in ['/Users/hzzone/Downloads/HKO-7_data/radarPNG', '/home/hzzone/HKO-7/radarPNG']:
     if os.path.exists(dirs):
         __C.HKO_PNG_PATH = dirs
-for dirs in ['/Users/hzzone/Downloads/HKO-7_data/radarPNG_mask', '/home/ubuntu/HKO-7/radarPNG_mask']:
+for dirs in ['/Users/hzzone/Downloads/HKO-7_data/radarPNG_mask', '/home/hzzone/HKO-7/radarPNG_mask']:
     if os.path.exists(dirs):
         __C.HKO_MASK_PATH = dirs
 

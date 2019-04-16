@@ -3,6 +3,7 @@ import torch
 from nowcasting.config import cfg
 from nowcasting.utils import rainfall_to_pixel
 import torch.nn.functional as F
+import numpy as np
 
 class Weighted_MSE(nn.Module):
 
@@ -27,13 +28,26 @@ class Weighted_MSE(nn.Module):
             error = (error.permute((1, 0)) * frame_weights)
         return torch.mean(error)
 
-class MSE(nn.Module):
-
-    def __init__(self):
+class Weighted_mse_mae(nn.Module):
+    def __init__(self, mse_weight=1.0, mae_weight=1.0, NORMAL_LOSS_GLOBAL_SCALE=0.00005):
         super().__init__()
+        self.NORMAL_LOSS_GLOBAL_SCALE = NORMAL_LOSS_GLOBAL_SCALE
+        self.mse_weight = mse_weight
+        self.mae_weight = mae_weight
 
     def forward(self, input, target, mask):
-        return torch.mean(mask*torch.sum((input-target)**2, (2, 3, 4)))
+        balancing_weights = cfg.HKO.EVALUATION.BALANCING_WEIGHTS
+        weights = torch.ones_like(input) * balancing_weights[0]
+        thresholds = [rainfall_to_pixel(ele) for ele in cfg.HKO.EVALUATION.THRESHOLDS]
+        for i, threshold in enumerate(thresholds):
+            weights = weights + (balancing_weights[i + 1] - balancing_weights[i]) * (target >= threshold).float()
+        weights = weights * mask.float()
+        # input: S*B*1*H*W
+        # error: S*B
+        mse = torch.sum(weights * ((input-target)**2), (2, 3, 4))
+        mae = torch.sum(weights * (torch.abs((input-target))), (2, 3, 4))
+        return self.NORMAL_LOSS_GLOBAL_SCALE * (self.mse_weight*torch.mean(mse) + self.mae_weight*torch.mean(mae))
+
 
 class WeightedCrossEntropyLoss(nn.Module):
 
