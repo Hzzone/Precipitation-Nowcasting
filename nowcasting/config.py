@@ -9,11 +9,18 @@ __C = edict()
 cfg = __C
 __C.GLOBAL = edict()
 __C.GLOBAL.DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+__C.GLOBAL.BATCH_SZIE = 2
+
+
 __C.ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 __C.HKO_DATA_BASE_PATH = os.path.join(__C.ROOT_DIR, 'hko_data')
 
-__C.HKO_PNG_PATH = '/Users/hzzone/Downloads/HKO-7_data/radarPNG'
-__C.HKO_MASK_PATH = '/Users/hzzone/Downloads/HKO-7_data/radarPNG_mask'
+for dirs in ['/Users/hzzone/Downloads/HKO-7_data/radarPNG', '/home/ubuntu/HKO-7/radarPNG']:
+    if os.path.exists(dirs):
+        __C.HKO_PNG_PATH = dirs
+for dirs in ['/Users/hzzone/Downloads/HKO-7_data/radarPNG_mask', '/home/ubuntu/HKO-7/radarPNG_mask']:
+    if os.path.exists(dirs):
+        __C.HKO_MASK_PATH = dirs
 
 __C.HKO = edict()
 

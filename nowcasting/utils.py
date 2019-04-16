@@ -3,72 +3,9 @@ from torch import nn
 from collections import OrderedDict
 from nowcasting.config import cfg
 
-def plot_result(writer, itera, train_result, valid_result):
-    train_csi, train_hss, train_mse, train_mae, train_balanced_mse, train_balanced_mae = \
-        train_result
-    train_csi, train_hss, train_mse, train_mae, train_balanced_mse, train_balanced_mae = \
-        np.nan_to_num(train_csi), \
-        np.nan_to_num(train_hss), \
-        np.nan_to_num(train_mse), \
-        np.nan_to_num(train_mae), \
-        np.nan_to_num(train_balanced_mse), \
-        np.nan_to_num(train_balanced_mae)
-
-    valid_csi, valid_hss, valid_mse, valid_mae, valid_balanced_mse, valid_balanced_mae = \
-        valid_result
-    valid_csi, valid_hss, valid_mse, valid_mae, valid_balanced_mse, valid_balanced_mae = \
-        np.nan_to_num(valid_csi), \
-        np.nan_to_num(valid_hss), \
-        np.nan_to_num(valid_mse), \
-        np.nan_to_num(valid_mae), \
-        np.nan_to_num(valid_balanced_mse), \
-        np.nan_to_num(valid_balanced_mae)
-
-    for i, thresh in enumerate(cfg.HKO.EVALUATION.THRESHOLDS):
-
-        writer.add_scalars("csi/{}".format(thresh), {
-            "train": train_csi[:, i].mean(),
-            "valid": valid_csi[:, i].mean(),
-            "train_last_frame": train_csi[-1, i],
-            "valid_last_frame": valid_csi[-1, i]
-        }, itera)
-
-    for i, thresh in enumerate(cfg.HKO.EVALUATION.THRESHOLDS):
-
-        writer.add_scalars("hss/{}".format(thresh), {
-            "train": train_hss[:, i].mean(),
-            "valid": valid_hss[:, i].mean(),
-            "train_last_frame": train_hss[-1, i],
-            "valid_last_frame": valid_hss[-1, i]
-        }, itera)
-
-    writer.add_scalars("mse", {
-        "train": train_mse.mean(),
-        "valid": valid_mse.mean(),
-        "train_last_frame": train_mse[-1],
-        "valid_last_frame": valid_mse[-1],
-    }, itera)
-
-    writer.add_scalars("mae", {
-        "train": train_mae.mean(),
-        "valid": valid_mae.mean(),
-        "train_last_frame": train_mae[-1],
-        "valid_last_frame": valid_mae[-1],
-    }, itera)
-
-    writer.add_scalars("balanced_mse", {
-        "train": train_balanced_mse.mean(),
-        "valid": valid_balanced_mse.mean(),
-        "train_last_frame": train_balanced_mse[-1],
-        "valid_last_frame": valid_balanced_mse[-1],
-    }, itera)
-
-    writer.add_scalars("balanced_mae", {
-        "train": train_balanced_mae.mean(),
-        "valid": valid_balanced_mae.mean(),
-        "train_last_frame": train_balanced_mae[-1],
-        "valid_last_frame": valid_balanced_mae[-1],
-    }, itera)
+# prediction: S*B*C*H*W
+def ProbToPixel(prediction):
+    assert len(prediction.size()) == 5
 
 def make_layers(block):
     layers = []
