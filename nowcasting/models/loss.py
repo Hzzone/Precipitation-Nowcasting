@@ -3,37 +3,14 @@ import torch
 from nowcasting.config import cfg
 from nowcasting.utils import rainfall_to_pixel
 import torch.nn.functional as F
-import numpy as np
-
-class Weighted_MSE(nn.Module):
-
-    def __init__(self, LAMDA=None):
-        super().__init__()
-        self._lambda = LAMDA
-
-    def forward(self, input, target, mask):
-        balancing_weights = cfg.HKO.EVALUATION.BALANCING_WEIGHTS
-        weights = torch.ones_like(input) * balancing_weights[0]
-        thresholds = [rainfall_to_pixel(ele) for ele in cfg.HKO.EVALUATION.THRESHOLDS]
-        for i, threshold in enumerate(thresholds):
-            weights = weights + (balancing_weights[i + 1] - balancing_weights[i]) * (target >= threshold).float()
-        weights = weights * mask.float()
-        # input: S*B*1*H*W
-        # error: S*B
-        error = torch.sum(weights * ((input-target)**2), (2, 3, 4))
-        if self._lambda is not None:
-            S, B = error.size()
-            frame_weights = torch.arange(1, 1 + S * self._lambda, self._lambda).to(cfg.GLOBAL.DEVICE)
-            # B*S
-            error = (error.permute((1, 0)) * frame_weights)
-        return torch.mean(error)
 
 class Weighted_mse_mae(nn.Module):
-    def __init__(self, mse_weight=1.0, mae_weight=1.0, NORMAL_LOSS_GLOBAL_SCALE=0.00005):
+    def __init__(self, mse_weight=1.0, mae_weight=1.0, NORMAL_LOSS_GLOBAL_SCALE=0.00005, LAMBDA=None):
         super().__init__()
         self.NORMAL_LOSS_GLOBAL_SCALE = NORMAL_LOSS_GLOBAL_SCALE
         self.mse_weight = mse_weight
         self.mae_weight = mae_weight
+        self._lambda = LAMBDA
 
     def forward(self, input, target, mask):
         balancing_weights = cfg.HKO.EVALUATION.BALANCING_WEIGHTS
@@ -46,6 +23,12 @@ class Weighted_mse_mae(nn.Module):
         # error: S*B
         mse = torch.sum(weights * ((input-target)**2), (2, 3, 4))
         mae = torch.sum(weights * (torch.abs((input-target))), (2, 3, 4))
+        if self._lambda is not None:
+            S, B = mse.size()
+            for i in range(S):
+                w = (1 + self._lambda * i)
+                mse[i, ...] = mse[i, ...] * w
+                mae[i, ...] = mae[i, ...] * w
         return self.NORMAL_LOSS_GLOBAL_SCALE * (self.mse_weight*torch.mean(mse) + self.mae_weight*torch.mean(mae))
 
 
@@ -74,13 +57,10 @@ class WeightedCrossEntropyLoss(nn.Module):
         # Loss: B*S*H*W
         error = F.cross_entropy(input, class_index, self._weight, reduction='none')
         if self._lambda is not None:
-            # for s in range(Loss.size(1)):
-            #     Loss[:, s, :, :] = (1.0+self._lambda*s) * Loss[:, s, :, :]
             B, S, H, W = error.size()
-            frame_weights = torch.arange(1, 1 + S * self._lambda, self._lambda).to(cfg.GLOBAL.DEVICE)
-            error = error.permute((0, 2, 3, 1)).reshape(-1, S) * frame_weights
-            # S*B*1*H*W
-            error = torch.reshape(error, (B, H, W, S)).permute((3, 0, 1, 2)).unsqueeze(2)
+            for i in range(S):
+                error[:, i, ...] = error[:, i, ...] * (1 + self._lambda * i)
+        error = error.unsqueeze(2)
         return torch.mean(error*mask)
 
 

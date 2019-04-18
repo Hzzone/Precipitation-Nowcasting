@@ -14,7 +14,7 @@ import shutil
 
 
 
-def train_and_test(encoder_forecaster, optimizer, criterion, lr_scheduler, batch_size, max_iterations, test_iteration_interval, test_and_save_checkpoint_iterations, ProbToPixel=None):
+def train_and_test(encoder_forecaster, optimizer, criterion, lr_scheduler, batch_size, max_iterations, test_iteration_interval, test_and_save_checkpoint_iterations, folder_name, ProbToPixel=None):
     # HKO-7 evaluater and dataloader
     IN_LEN = cfg.HKO.BENCHMARK.IN_LEN
     OUT_LEN = cfg.HKO.BENCHMARK.OUT_LEN
@@ -29,10 +29,10 @@ def train_and_test(encoder_forecaster, optimizer, criterion, lr_scheduler, batch
                                      stride=cfg.HKO.BENCHMARK.STRIDE)
 
     train_loss = 0.0
-    folder_name = os.path.dirname(__file__).split('/')[-1]
     save_dir = osp.join(cfg.GLOBAL.MODEL_SAVE_DIR, folder_name)
-    if not os.path.exists(save_dir):
-        os.mkdir(save_dir)
+    if os.path.exists(save_dir):
+        shutil.rmtree(save_dir)
+    os.mkdir(save_dir)
     model_save_dir = osp.join(save_dir, 'models')
     log_dir = osp.join(save_dir, 'logs')
     all_scalars_file_name = osp.join(save_dir, "all_scalars.json")

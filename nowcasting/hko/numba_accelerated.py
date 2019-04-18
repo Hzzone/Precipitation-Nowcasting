@@ -105,9 +105,13 @@ def _get_hit_miss_counts_numba(prediction, truth, mask, thresholds):
                             ind = (1 - btruth) * 2 + (1 - bpred)
                             ret[i][j][k][ind] += 1
                             # The above code is the same as:
+                            # TP
                             # ret[i][j][k][0] += bpred * btruth
+                            # FP
                             # ret[i][j][k][1] += (1 - bpred) * btruth
+                            # TN
                             # ret[i][j][k][2] += bpred * (1 - btruth)
+                            # FN
                             # ret[i][j][k][3] += (1 - bpred) * (1- btruth)
     return ret
 

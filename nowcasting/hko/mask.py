@@ -5,7 +5,7 @@ from concurrent.futures import ThreadPoolExecutor, wait
 
 _executor_pool = ThreadPoolExecutor(max_workers=16)
 
-def read_mask_file(filepath, out):
+def read_mask_file(filepath, out=None):
     """Load mask file to numpy array
 
     Parameters
@@ -19,6 +19,8 @@ def read_mask_file(filepath, out):
     """
     f = open(filepath, 'rb')
     dat = zlib.decompress(f.read())
+    if out is None:
+        return np.frombuffer(dat, dtype=bool).reshape((480, 480))
     out[:] = np.frombuffer(dat, dtype=bool).reshape((480, 480))
     f.close()
 

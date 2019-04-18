@@ -10,6 +10,7 @@ from torch.optim import lr_scheduler
 from nowcasting.models.loss import Weighted_mse_mae
 from nowcasting.models.trajGRU import TrajGRU
 from nowcasting.train_and_test import train_and_test
+import os
 
 
 
@@ -87,8 +88,8 @@ encoder_forecaster = EF(encoder, forecaster).to(cfg.GLOBAL.DEVICE)
 
 optimizer = torch.optim.Adam(encoder_forecaster.parameters(), lr=LR)
 # exp_lr_scheduler = lr_scheduler.StepLR(optimizer, step_size=LR_step_size, gamma=0.1)
-mult_step_scheduler = lr_scheduler.MultiStepLR(optimizer, milestones=[30000, 30000], gamma=0.1)
+mult_step_scheduler = lr_scheduler.MultiStepLR(optimizer, milestones=[30000, 60000], gamma=0.1)
 
+folder_name = os.path.split(os.path.dirname(os.path.abspath(__file__)))[-1]
 
-
-train_and_test(encoder_forecaster, optimizer, criterion, mult_step_scheduler, batch_size, max_iterations, test_iteration_interval, test_and_save_checkpoint_iterations)
+train_and_test(encoder_forecaster, optimizer, criterion, mult_step_scheduler, batch_size, max_iterations, test_iteration_interval, test_and_save_checkpoint_iterations, folder_name)

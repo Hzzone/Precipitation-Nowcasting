@@ -259,6 +259,8 @@ class HKOEvaluation(object):
         self._gdl[:] = 0
         self._ssim[:] = 0
         self._total_batch_num = 0
+        self._balanced_mse[:] = 0
+        self._balanced_mae[:] = 0
 
     def update(self, gt, pred, mask, start_datetimes=None):
         """
@@ -323,6 +325,20 @@ class HKOEvaluation(object):
         self._total_misses += misses.sum(axis=1)
         self._total_false_alarms += false_alarms.sum(axis=1)
         self._total_correct_negatives += correct_negatives.sum(axis=1)
+
+    def calculate_f1_score(self):
+        '''
+        计算每个分段的 precision, recall 和 f1 score.
+        :return:
+        '''
+        # a: TP, b: TN, c: FP, d: FN
+        a = self._total_hits.astype(np.float64)
+        b = self._total_false_alarms.astype(np.float64)
+        c = self._total_misses.astype(np.float64)
+        d = self._total_correct_negatives.astype(np.float64)
+        precision = a / (a + c)
+        recall = a / (a + d)
+        return precision, recall, (2*precision*recall)/(precision+recall)
 
     def calculate_stat(self):
         """The following measurements will be used to measure the score of the forecaster
