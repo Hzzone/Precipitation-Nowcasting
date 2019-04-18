@@ -1,7 +1,7 @@
 from torch import nn
 import torch
 from nowcasting.config import cfg
-from nowcasting.utils import rainfall_to_pixel
+from nowcasting.utils import rainfall_to_pixel, dBZ_to_pixel
 import torch.nn.functional as F
 
 class Weighted_mse_mae(nn.Module):
@@ -37,9 +37,12 @@ class WeightedCrossEntropyLoss(nn.Module):
     # weight should be a 1D Tensor assigning weight to each of the classes.
     def __init__(self, thresholds, weight=None, LAMDA=None):
         super().__init__()
+        # 每个类别的权重，使用原文章的权重。
         self._weight = weight
+        # 每一帧 Loss 递进参数
         self._lambda = LAMDA
-        self.thresholds = thresholds
+        # thresholds: 雷达反射率
+        self._thresholds = thresholds
 
     # input: output prob, S*B*C*H*W
     # target: S*B*1*H*W, original data, range [0, 1]
@@ -51,7 +54,8 @@ class WeightedCrossEntropyLoss(nn.Module):
         # B*S*H*W
         target = target.permute((1, 2, 0, 3, 4)).squeeze(1)
         class_index = torch.zeros_like(target).long()
-        thresholds = [rainfall_to_pixel(ele) for ele in self.thresholds]
+        # thresholds = [rainfall_to_pixel(ele) for ele in self._thresholds]
+        thresholds = [dBZ_to_pixel(ele) for ele in self._thresholds]
         for i, threshold in enumerate(thresholds, 1):
             class_index[target >= threshold] = i
         # Loss: B*S*H*W

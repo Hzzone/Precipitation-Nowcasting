@@ -7,10 +7,6 @@ import os.path as osp
 import os
 from nowcasting.hko.mask import read_mask_file
 
-# prediction: S*B*C*H*W
-def ProbToPixel(prediction):
-    assert len(prediction.size()) == 5
-
 def make_layers(block):
     layers = []
     for layer_name, v in block.items():

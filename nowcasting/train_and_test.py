@@ -14,7 +14,7 @@ import shutil
 
 
 
-def train_and_test(encoder_forecaster, optimizer, criterion, lr_scheduler, batch_size, max_iterations, test_iteration_interval, test_and_save_checkpoint_iterations, folder_name, ProbToPixel=None):
+def train_and_test(encoder_forecaster, optimizer, criterion, lr_scheduler, batch_size, max_iterations, test_iteration_interval, test_and_save_checkpoint_iterations, folder_name, probToPixel=None):
     # HKO-7 evaluater and dataloader
     IN_LEN = cfg.HKO.BENCHMARK.IN_LEN
     OUT_LEN = cfg.HKO.BENCHMARK.OUT_LEN
@@ -68,11 +68,17 @@ def train_and_test(encoder_forecaster, optimizer, criterion, lr_scheduler, batch
 
 
         train_label_numpy = train_label.cpu().numpy()
-        if ProbToPixel is None:
+        if probToPixel is None:
+            # 未使用分类问题
             output_numpy = np.clip(output.detach().cpu().numpy(), 0.0, 1.0)
         else:
             # if classification, output: S*B*C*H*W
-            output_numpy = ProbToPixel(output.detach().cpu().numpy())
+            # 使用分类问题，需要转化为像素值
+            # 使用分类 Loss 的阈值
+            output_numpy, output_numpy_update = probToPixel(output.detach(), train_label, mask,
+                                                            lr_scheduler.get_lr()[0])
+
+
         evaluater.update(train_label_numpy, output_numpy, mask.cpu().numpy())
 
         if itera % test_iteration_interval == 0:
@@ -105,10 +111,11 @@ def train_and_test(encoder_forecaster, optimizer, criterion, lr_scheduler, batch
                     valid_loss += loss.item()
 
                     valid_label_numpy = valid_label.cpu().numpy()
-                    if ProbToPixel is None:
+                    if probToPixel is None:
                         output_numpy = np.clip(output.detach().cpu().numpy(), 0.0, 1.0)
                     else:
-                        output_numpy = ProbToPixel(output.detach().cpu().numpy())
+                        # output_numpy = probToPixel(output.detach().cpu().numpy())
+                        output_numpy, output_numpy_update = probToPixel(output.detach(), valid_label, mask, lr_scheduler.get_lr()[0])
 
                     evaluater.update(valid_label_numpy, output_numpy, mask.cpu().numpy())
                 _, _, valid_csi, valid_hss, _, valid_mse, valid_mae, valid_balanced_mse, valid_balanced_mae, _ = evaluater.calculate_stat()
