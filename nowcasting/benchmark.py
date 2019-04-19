@@ -9,21 +9,17 @@ from nowcasting.models.encoder import Encoder
 from collections import OrderedDict
 from nowcasting.models.model import EF
 from torch.optim import lr_scheduler
-from nowcasting.models.loss import Weighted_mse_mae, Weighted_MSE
+from nowcasting.models.loss import Weighted_mse_mae
 from nowcasting.models.trajGRU import TrajGRU
 from nowcasting.train_and_test import train_and_test
 import numpy as np
 from nowcasting.hko.evaluation import *
+from nowcasting.hko.benchmark import HKOBenchmarkEnv
 
 IN_LEN = 5
 OUT_LEN = 20
 
 batch_size = 1
-
-valid_hko_iter = HKOIterator(pd_path=cfg.HKO_PD.RAINY_VALID,
-                                     sample_mode="sequent",
-                                     seq_len=IN_LEN+OUT_LEN,
-                                     stride=cfg.HKO.BENCHMARK.STRIDE)
 
 # build model
 encoder_params = [
@@ -84,43 +80,37 @@ forecaster_params = [
 forecaster = Forecaster(forecaster_params[0], forecaster_params[1]).to(cfg.GLOBAL.DEVICE)
 
 encoder_forecaster = EF(encoder, forecaster).to(cfg.GLOBAL.DEVICE)
-encoder_forecaster.load_state_dict(torch.load('/home/hzzone/models/encoder_forecaster_7000.pth'))
-
-criterion = Weighted_MSE()
+encoder_forecaster.load_state_dict(torch.load('/home/hzzone/save/trajGRU_balanced_mse_mae/models/encoder_forecaster_77000.pth'))
 
 with torch.no_grad():
     encoder_forecaster.eval()
-    valid_hko_iter.reset()
-    valid_loss = 0.0
+    evaluator = HKOEvaluation(seq_len=OUT_LEN, use_central=False)
+    hko_iter = HKOIterator(pd_path=cfg.HKO_PD.RAINY_TEST,
+    # hko_iter = HKOIterator(pd_path=cfg.HKO_PD.RAINY_VALID,
+                                 sample_mode="sequent",
+                                 seq_len=IN_LEN + OUT_LEN,
+                                 stride=cfg.HKO.BENCHMARK.STRIDE)
     valid_time = 0
-    evaluater = HKOEvaluation(seq_len=OUT_LEN, use_central=False)
-    while not valid_hko_iter.use_up:
+    while not hko_iter.use_up:
         valid_batch, valid_mask, sample_datetimes, _ = \
-            valid_hko_iter.sample(batch_size=batch_size)
+            hko_iter.sample(batch_size=batch_size)
         if valid_batch.shape[1] == 0:
             break
         if not cfg.HKO.EVALUATION.VALID_DATA_USE_UP and valid_time > cfg.HKO.EVALUATION.VALID_TIME:
             break
-        valid_time += 1
+
         valid_batch = torch.from_numpy(valid_batch.astype(np.float32)).to(cfg.GLOBAL.DEVICE) / 255.0
         valid_data = valid_batch[:IN_LEN, ...]
         valid_label = valid_batch[IN_LEN:IN_LEN + OUT_LEN, ...]
         mask = torch.from_numpy(valid_mask[IN_LEN:IN_LEN + OUT_LEN, ...].astype(int)).to(cfg.GLOBAL.DEVICE)
         output = encoder_forecaster(valid_data)
 
-        print(output.size(), valid_label.size())
-        loss = criterion(output, valid_label, mask)
-        valid_loss += loss.item()
-
         valid_label_numpy = valid_label.cpu().numpy()
         output_numpy = np.clip(output.detach().cpu().numpy(), 0.0, 1.0)
 
-        evaluater.update(valid_label_numpy, output_numpy, mask.cpu().numpy())
-        if valid_time>=1:
-            break
-    _, _, valid_csi, valid_hss, _, valid_mse, valid_mae, valid_balanced_mse, valid_balanced_mae, _ = evaluater.calculate_stat()
-    print(valid_balanced_mse)
-    print(valid_balanced_mse.mean())
-    print(valid_loss)
+        evaluator.update(valid_label_numpy, output_numpy, mask.cpu().numpy())
 
-    evaluater.clear_all()
+        valid_time += 1
+        print(valid_time)
+
+    evaluator.print_stat_readable()

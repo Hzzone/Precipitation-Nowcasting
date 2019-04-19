@@ -56,7 +56,7 @@ class Predictor(nn.Module):
         output = self.model(input)
         return output.unsqueeze(2).permute((1, 0, 2, 3, 4))
 
-model = Predictor(params)
+model = Predictor(params).to(cfg.GLOBAL.DEVICE)
 # data = torch.randn(5, 4, 1, 480, 480)
 # output = model(data)
 # print(output.size())
