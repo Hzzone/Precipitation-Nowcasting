@@ -25,22 +25,23 @@ class Weighted_mse_mae(nn.Module):
         mae = torch.sum(weights * (torch.abs((input-target))), (2, 3, 4))
         if self._lambda is not None:
             S, B = mse.size()
-            for i in range(S):
-                w = (1 + self._lambda * i)
-                mse[i, ...] = mse[i, ...] * w
-                mae[i, ...] = mae[i, ...] * w
+            w = torch.arange(1.0, 1.0 + S * self._lambda, self._lambda)
+            if torch.cuda.is_available():
+                w = w.to(mse.get_device())
+            mse = (w * mse.permute(1, 0)).permute(1, 0)
+            mae = (w * mae.permute(1, 0)).permute(1, 0)
         return self.NORMAL_LOSS_GLOBAL_SCALE * (self.mse_weight*torch.mean(mse) + self.mae_weight*torch.mean(mae))
 
 
 class WeightedCrossEntropyLoss(nn.Module):
 
     # weight should be a 1D Tensor assigning weight to each of the classes.
-    def __init__(self, thresholds, weight=None, LAMDA=None):
+    def __init__(self, thresholds, weight=None, LAMBDA=None):
         super().__init__()
         # 每个类别的权重，使用原文章的权重。
         self._weight = weight
         # 每一帧 Loss 递进参数
-        self._lambda = LAMDA
+        self._lambda = LAMBDA
         # thresholds: 雷达反射率
         self._thresholds = thresholds
 
@@ -62,8 +63,13 @@ class WeightedCrossEntropyLoss(nn.Module):
         error = F.cross_entropy(input, class_index, self._weight, reduction='none')
         if self._lambda is not None:
             B, S, H, W = error.size()
-            for i in range(S):
-                error[:, i, ...] = error[:, i, ...] * (1 + self._lambda * i)
+
+            w = torch.arange(1.0, 1.0 + S * self._lambda, self._lambda)
+            if torch.cuda.is_available():
+                w = w.to(error.get_device())
+                # B, H, W, S
+            error = (w * error.permute(0, 2, 3, 1)).permute(0, 3, 1, 2)
+        # B*S*1*H*W
         error = error.unsqueeze(2)
         return torch.mean(error*mask)
 
