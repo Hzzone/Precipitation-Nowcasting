@@ -32,7 +32,7 @@ forecaster = Forecaster(forecaster_params[0], forecaster_params[1]).to(cfg.GLOBA
 encoder_forecaster = EF(encoder, forecaster).to(cfg.GLOBAL.DEVICE)
 encoder_forecaster.load_state_dict(torch.load('/home/hzzone/save/trajGRU_balanced_mse_mae/models/encoder_forecaster_77000.pth'))
 
-optimizer = torch.optim.Adam(encoder_forecaster.parameters(), lr=LR, weight_decay=1e-6)
+optimizer = torch.optim.Adam(encoder_forecaster.parameters(), lr=LR)
 exp_lr_scheduler = lr_scheduler.StepLR(optimizer, step_size=LR_step_size, gamma=0.7)
 # mult_step_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[50000, 80000], gamma=0.1)
 

@@ -48,7 +48,7 @@ def count_pixels(name=None):
             tmp_dir = '/'.join(root.split('/')[-3:])
             png_path = osp.join(png_dir, tmp_dir, file_name)
             mask_path = osp.join(mask_dir, tmp_dir, file_name.split('.')[0]+'.mask')
-            label, count = np.unique(cv2.imread(png_path)[read_mask_file(mask_path)], return_counts=True)
+            label, count = np.unique(cv2.cvtColor(cv2.imread(png_path), cv2.COLOR_BGR2GRAY)[read_mask_file(mask_path)], return_counts=True)
             counts[label] += count
     if name is not None:
         np.save(name, counts)
