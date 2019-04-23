@@ -69,9 +69,9 @@ class WeightedCrossEntropyLoss(nn.Module):
                 w = w.to(error.get_device())
                 # B, H, W, S
             error = (w * error.permute(0, 2, 3, 1)).permute(0, 3, 1, 2)
-        # B*S*1*H*W
-        error = error.unsqueeze(2)
-        return torch.mean(error*mask)
+        # S*B*1*H*W
+        error = error.permute(1, 0, 2, 3).unsqueeze(2)
+        return torch.mean(error*mask.float())
 
 
 

@@ -36,15 +36,17 @@ def train_and_test(encoder_forecaster, optimizer, criterion, lr_scheduler, batch
     model_save_dir = osp.join(save_dir, 'models')
     log_dir = osp.join(save_dir, 'logs')
     all_scalars_file_name = osp.join(save_dir, "all_scalars.json")
+    pkl_save_dir = osp.join(save_dir, 'pkl')
     if osp.exists(all_scalars_file_name):
         os.remove(all_scalars_file_name)
     if osp.exists(log_dir):
         shutil.rmtree(log_dir)
-    os.mkdir(log_dir)
-
+    if osp.exists(pkl_save_dir):
+        shutil.rmtree(pkl_save_dir)
     if osp.exists(model_save_dir):
         shutil.rmtree(model_save_dir)
     os.mkdir(model_save_dir)
+    os.mkdir(pkl_save_dir)
 
     writer = SummaryWriter(log_dir)
 
@@ -75,7 +77,7 @@ def train_and_test(encoder_forecaster, optimizer, criterion, lr_scheduler, batch
             # if classification, output: S*B*C*H*W
             # 使用分类问题，需要转化为像素值
             # 使用分类 Loss 的阈值
-            output_numpy, output_numpy_update = probToPixel(output.detach(), train_label, mask,
+            output_numpy = probToPixel(output.detach(), train_label, mask,
                                                             lr_scheduler.get_lr()[0])
 
 
@@ -86,6 +88,7 @@ def train_and_test(encoder_forecaster, optimizer, criterion, lr_scheduler, batch
 
             train_loss = train_loss/test_iteration_interval
 
+            evaluater.save_pkl(osp.join('{}_{}_train'.format(pkl_save_dir, itera)))
             evaluater.clear_all()
 
             with torch.no_grad():
@@ -120,6 +123,7 @@ def train_and_test(encoder_forecaster, optimizer, criterion, lr_scheduler, batch
                     evaluater.update(valid_label_numpy, output_numpy, mask.cpu().numpy())
                 _, _, valid_csi, valid_hss, _, valid_mse, valid_mae, valid_balanced_mse, valid_balanced_mae, _ = evaluater.calculate_stat()
 
+                evaluater.save_pkl(osp.join('{}_{}_val'.format(pkl_save_dir, itera)))
                 evaluater.clear_all()
                 valid_loss = valid_loss/valid_time
 

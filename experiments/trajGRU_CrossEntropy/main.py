@@ -10,90 +10,69 @@ from nowcasting.models.model import EF
 from nowcasting.models.loss import WeightedCrossEntropyLoss
 from nowcasting.models.trajGRU import TrajGRU
 from nowcasting.train_and_test import train_and_test
+from experiments.net_params import encoder_params, forecaster_params
+from torch.optim import lr_scheduler
+import os
+import numpy as np
+from nowcasting.utils import *
+from nowcasting.models.probToPixel import ProbToPixel
+from torch import nn
 
 
 
 ### Config
 
 
-batch_size = cfg.GLOBAL.BATCH_SZIE
-max_iterations = 200000
+# batch_size = cfg.GLOBAL.BATCH_SZIE
+batch_size = 2
+max_iterations = 50000
 test_iteration_interval = 1000
 test_and_save_checkpoint_iterations = 1000
 
-LR = 1e-4
-LR_step_size = 80000
-
-
-# build model
-encoder_params = [
-    [
-        OrderedDict({'conv1_leaky_1': [1, 8, 7, 5, 1]}),
-        OrderedDict({'conv2_leaky_1': [64, 192, 5, 3, 1]}),
-        OrderedDict({'conv3_leaky_1': [192, 192, 3, 2, 1]}),
-    ],
-
-    [
-        TrajGRU(input_channel=8, num_filter=64, b_h_w=(batch_size, 96, 96), zoneout=0.0, L=13,
-                i2h_kernel=(3, 3), i2h_stride=(1, 1), i2h_pad=(1, 1),
-                h2h_kernel=(5, 5), h2h_dilate=(1, 1),
-                act_type=cfg.MODEL.RNN_ACT_TYPE),
-
-        TrajGRU(input_channel=192, num_filter=192, b_h_w=(batch_size, 32, 32), zoneout=0.0, L=13,
-                i2h_kernel=(3, 3), i2h_stride=(1, 1), i2h_pad=(1, 1),
-                h2h_kernel=(5, 5), h2h_dilate=(1, 1),
-                act_type=cfg.MODEL.RNN_ACT_TYPE),
-        TrajGRU(input_channel=192, num_filter=192, b_h_w=(batch_size, 16, 16), zoneout=0.0, L=9,
-                i2h_kernel=(3, 3), i2h_stride=(1, 1), i2h_pad=(1, 1),
-                h2h_kernel=(3, 3), h2h_dilate=(1, 1),
-                act_type=cfg.MODEL.RNN_ACT_TYPE)
-    ]
-]
+LR = 1e-5
+LR_step_size = 20000
 
 
 encoder = Encoder(encoder_params[0], encoder_params[1]).to(cfg.GLOBAL.DEVICE)
 
-forecaster_params = [
-    [
-        OrderedDict({'deconv1_leaky_1': [192, 192, 4, 2, 1]}),
-        OrderedDict({'deconv2_leaky_1': [192, 64, 5, 3, 1]}),
-        OrderedDict({
-            'deconv3_leaky_1': [64, 8, 7, 5, 1],
-            'conv3_leaky_2': [8, 8, 3, 1, 1],
-            'conv3_3': [8, 1, 1, 1, 0]
-        }),
-    ],
-
-    [
-        TrajGRU(input_channel=192, num_filter=192, b_h_w=(batch_size, 16, 16), zoneout=0.0, L=13,
-                i2h_kernel=(3, 3), i2h_stride=(1, 1), i2h_pad=(1, 1),
-                h2h_kernel=(3, 3), h2h_dilate=(1, 1),
-                act_type=cfg.MODEL.RNN_ACT_TYPE),
-
-        TrajGRU(input_channel=192, num_filter=192, b_h_w=(batch_size, 32, 32), zoneout=0.0, L=13,
-                i2h_kernel=(3, 3), i2h_stride=(1, 1), i2h_pad=(1, 1),
-                h2h_kernel=(5, 5), h2h_dilate=(1, 1),
-                act_type=cfg.MODEL.RNN_ACT_TYPE),
-        TrajGRU(input_channel=64, num_filter=64, b_h_w=(batch_size, 96, 96), zoneout=0.0, L=9,
-                i2h_kernel=(3, 3), i2h_stride=(1, 1), i2h_pad=(1, 1),
-                h2h_kernel=(5, 5), h2h_dilate=(1, 1),
-                act_type=cfg.MODEL.RNN_ACT_TYPE)
-    ]
-]
-
 forecaster = Forecaster(forecaster_params[0], forecaster_params[1]).to(cfg.GLOBAL.DEVICE)
 
 encoder_forecaster = EF(encoder, forecaster).to(cfg.GLOBAL.DEVICE)
+encoder_forecaster.load_state_dict(torch.load('/home/hzzone/save/trajGRU_balanced_mse_mae/models/encoder_forecaster_77000.pth'))
+for param in encoder_forecaster.parameters():
+    param.requires_grad = False
 
-optimizer = torch.optim.Adam(encoder_forecaster.parameters(), lr=LR, weight_decay=1e-6)
-# exp_lr_scheduler = lr_scheduler.StepLR(optimizer, step_size=LR_step_size, gamma=0.1)
-mult_step_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[50000, 80000], gamma=0.1)
+# thresholds = np.flatnonzero(np.load('../../pixel_counts.npy'))/255.0 # pixel, 0-255
+thresholds = [9, 11, 15, 18, 20, 24, 26, 31, 36, 39, 43, 49, 53, 56, 58]
 
-# criterion = torch.nn.MSELoss(reduction='mean')
-# criterion = MSE()
-weight = (torch.tensor([0, 1, 2, 5, 10, 30]) + 1).to(cfg.GLOBAL.DEVICE).float()
-thresholds = [0.5, 2, 5, 10, 30]
+thresholds = thresholds + rainfall_to_dBZ(cfg.HKO.EVALUATION.THRESHOLDS).tolist()
+thresholds = np.array(sorted(thresholds))
+encoder_forecaster.forecaster.stage1.conv3_3 = nn.Conv2d(8, len(thresholds)+1, kernel_size=(1, 1), stride=(1, 1)).to(cfg.GLOBAL.DEVICE)
 
-criterion = WeightedCrossEntropyLoss(weight).to(cfg.GLOBAL.DEVICE)
+optimizer = torch.optim.Adam(encoder_forecaster.parameters(), lr=LR)
+exp_lr_scheduler = lr_scheduler.StepLR(optimizer, step_size=LR_step_size, gamma=0.7)
 
-train_and_test(encoder_forecaster, optimizer, criterion, mult_step_scheduler, batch_size, max_iterations, test_iteration_interval, test_and_save_checkpoint_iterations)
+thresholds = dBZ_to_rainfall(thresholds)
+weights = np.ones_like(thresholds)
+balancing_weights = cfg.HKO.EVALUATION.BALANCING_WEIGHTS
+for i, threshold in enumerate(cfg.HKO.EVALUATION.THRESHOLDS):
+    weights = weights + (balancing_weights[i + 1] - balancing_weights[i]) * (thresholds >= threshold)
+weights = weights + 1
+weights = np.array([1] + weights.tolist())
+# print(thresholds)
+# print(len(thresholds))
+# print(weights)
+weights = torch.from_numpy(weights).to(cfg.GLOBAL.DEVICE).float()
+# exit(0)
+
+thresholds = rainfall_to_dBZ(thresholds)
+criterion = WeightedCrossEntropyLoss(thresholds, weights).to(cfg.GLOBAL.DEVICE)
+
+folder_name = os.path.split(os.path.dirname(os.path.abspath(__file__)))[-1]
+
+ts = thresholds.tolist()
+middle_value = dBZ_to_pixel(np.array([-10.0] + [(x+y)/2 for x, y in zip(ts, ts[1:]+[60.0])]))
+# probToPixel = ProbToPixel(dBZ_to_pixel(thresholds), requires_grad=False)
+probToPixel = ProbToPixel(middle_value, requires_grad=False)
+
+train_and_test(encoder_forecaster, optimizer, criterion, exp_lr_scheduler, batch_size, max_iterations, test_iteration_interval, test_and_save_checkpoint_iterations, folder_name, probToPixel)
