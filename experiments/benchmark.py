@@ -17,6 +17,7 @@ from nowcasting.hko.evaluation import *
 import copy
 from experiments.net_params import *
 from nowcasting.models.model import Predictor
+from experiments.rover_and_last_frame import LastFrame, Rover
 
 
 encoder = Encoder(encoder_params[0], encoder_params[1]).to(cfg.GLOBAL.DEVICE)
@@ -31,15 +32,19 @@ encoder_forecaster1.load_state_dict(torch.load('/home/hzzone/save/trajGRU_balanc
 encoder_forecaster2.load_state_dict(torch.load('/home/hzzone/save/trajGRU_frame_weighted_mse/models/encoder_forecaster_45000.pth'))
 conv2d_network.load_state_dict(torch.load('/home/hzzone/save/conv2d/models/encoder_forecaster_60000.pth'))
 
-models = {
+models = OrderedDict({
     'conv2d': conv2d_network,
     'trajGRU_balanced_mse_mae': encoder_forecaster1,
-    'trajGRU_frame_weighted_mse': encoder_forecaster2
-}
+    'trajGRU_frame_weighted_mse': encoder_forecaster2,
+    'last_frame': LastFrame,
+    'rover_nonlinear': Rover()
+})
 
 with torch.no_grad():
-    for name, encoder_forecaster in models.items():
-        encoder_forecaster.eval()
+    for name, model in models.items():
+        is_deeplearning_model = (torch.nn.Module in model.__class__.__bases__)
+        if is_deeplearning_model:
+            model.eval()
         evaluator = HKOEvaluation(seq_len=OUT_LEN, use_central=False)
         hko_iter = HKOIterator(pd_path=cfg.HKO_PD.RAINY_TEST,
         # hko_iter = HKOIterator(pd_path=cfg.HKO_PD.RAINY_VALID,
@@ -55,19 +60,29 @@ with torch.no_grad():
             if not cfg.HKO.EVALUATION.VALID_DATA_USE_UP and valid_time > cfg.HKO.EVALUATION.VALID_TIME:
                 break
 
-            valid_batch = torch.from_numpy(valid_batch.astype(np.float32)).to(cfg.GLOBAL.DEVICE) / 255.0
+            valid_batch = valid_batch.astype(np.float32) / 255.0
             valid_data = valid_batch[:IN_LEN, ...]
             valid_label = valid_batch[IN_LEN:IN_LEN + OUT_LEN, ...]
-            mask = torch.from_numpy(valid_mask[IN_LEN:IN_LEN + OUT_LEN, ...].astype(int)).to(cfg.GLOBAL.DEVICE)
-            output = encoder_forecaster(valid_data)
+            mask = valid_mask[IN_LEN:IN_LEN + OUT_LEN, ...].astype(int)
 
-            valid_label_numpy = valid_label.cpu().numpy()
-            output_numpy = np.clip(output.detach().cpu().numpy(), 0.0, 1.0)
+            if is_deeplearning_model:
+                valid_data = torch.from_numpy(valid_data).to(cfg.GLOBAL.DEVICE)
 
-            evaluator.update(valid_label_numpy, output_numpy, mask.cpu().numpy())
+            output = model(valid_data)
+
+            if is_deeplearning_model:
+                output = output.cpu().numpy()
+
+            output = np.clip(output, 0.0, 1.0)
+
+            evaluator.update(valid_label, output, mask)
 
             valid_time += 1
-            print(valid_time)
+            # print(valid_time)
+        #     if valid_time%1000==0:
+        #         print('{} '.format(valid_time), end='')
+        #
+        # print()
 
-        evaluator.print_stat_readable()
-        evaluator.save_txt_readable(osp.join('.', name + '.txt'))
+        # evaluator.save_txt_readable(osp.join('./benchmark_stat', name + '.txt'))
+        evaluator.save_pkl(osp.join('./benchmark_stat', name + '.pkl'))

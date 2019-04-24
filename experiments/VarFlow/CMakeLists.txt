@@ -1,0 +1,8 @@
+cmake_minimum_required(VERSION 2.8)
+project( Varflow )
+find_package( OpenCV REQUIRED )
+include_directories(SYSTEM ${OpenCV_INCLUDE_DIRS})
+add_library(varflow SHARED c_api.cpp VarFlow.cpp)
+add_executable( FlowExample example.cpp VarFlow.cpp)
+target_link_libraries( FlowExample ${OpenCV_LIBS} )
+target_link_libraries( varflow ${OpenCV_LIBS} )

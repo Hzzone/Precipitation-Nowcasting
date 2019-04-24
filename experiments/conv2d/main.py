@@ -40,4 +40,6 @@ model = Predictor(conv2d_params).to(cfg.GLOBAL.DEVICE)
 optimizer = torch.optim.Adam(model.parameters(), lr=LR, weight_decay=1e-6)
 exp_lr_scheduler = lr_scheduler.StepLR(optimizer, step_size=20000, gamma=0.7)
 folder_name = os.path.split(os.path.dirname(os.path.abspath(__file__)))[-1]
-train_and_test(model, optimizer, criterion, exp_lr_scheduler, batch_size, max_iterations, test_iteration_interval, test_and_save_checkpoint_iterations, folder_name)
+
+if __name__ == '__main__':
+    train_and_test(model, optimizer, criterion, exp_lr_scheduler, batch_size, max_iterations, test_iteration_interval, test_and_save_checkpoint_iterations, folder_name)
