@@ -73,3 +73,16 @@ forecaster_params = [
     ]
 ]
 
+
+# build model
+conv2d_params = OrderedDict({
+    'conv1_relu_1': [5, 64, 7, 5, 1],
+    'conv2_relu_1': [64, 192, 5, 3, 1],
+    'conv3_relu_1': [192, 192, 3, 2, 1],
+    'deconv1_relu_1': [192, 192, 4, 2, 1],
+    'deconv2_relu_1': [192, 64, 5, 3, 1],
+    'deconv3_relu_1': [64, 64, 7, 5, 1],
+    'conv3_relu_2': [64, 20, 3, 1, 1],
+    'conv3_3': [20, 20, 1, 1, 0]
+})
+

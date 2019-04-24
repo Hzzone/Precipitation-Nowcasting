@@ -55,11 +55,10 @@ class WeightedCrossEntropyLoss(nn.Module):
         # B*S*H*W
         target = target.permute((1, 2, 0, 3, 4)).squeeze(1)
         class_index = torch.zeros_like(target).long()
-        # thresholds = [rainfall_to_pixel(ele) for ele in self._thresholds]
-        thresholds = [dBZ_to_pixel(ele) for ele in self._thresholds]
-        for i, threshold in enumerate(thresholds, 1):
+        thresholds = [0.0] + rainfall_to_pixel(self._thresholds).tolist()
+        # print(thresholds)
+        for i, threshold in enumerate(thresholds):
             class_index[target >= threshold] = i
-        # Loss: B*S*H*W
         error = F.cross_entropy(input, class_index, self._weight, reduction='none')
         if self._lambda is not None:
             B, S, H, W = error.size()

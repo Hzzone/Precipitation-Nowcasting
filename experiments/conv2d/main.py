@@ -13,6 +13,8 @@ from nowcasting.train_and_test import train_and_test
 import os
 from nowcasting.utils import make_layers
 from torch import nn
+from experiments.net_params import conv2d_params
+from nowcasting.models.model import Predictor
 
 
 
@@ -29,34 +31,8 @@ LR = 1e-4
 
 criterion = Weighted_mse_mae().to(cfg.GLOBAL.DEVICE)
 
-# build model
-params = OrderedDict({
-    'conv1_relu_1': [5, 64, 7, 5, 1],
-    'conv2_relu_1': [64, 192, 5, 3, 1],
-    'conv3_relu_1': [192, 192, 3, 2, 1],
-    'deconv1_relu_1': [192, 192, 4, 2, 1],
-    'deconv2_relu_1': [192, 64, 5, 3, 1],
-    'deconv3_relu_1': [64, 64, 7, 5, 1],
-    'conv3_relu_2': [64, 20, 3, 1, 1],
-    'conv3_3': [20, 20, 1, 1, 0]
-})
 
-class Predictor(nn.Module):
-    def __init__(self, params):
-        super().__init__()
-        self.model = make_layers(params)
-
-    def forward(self, input):
-        '''
-        input: S*B*1*H*W
-        :param input:
-        :return:
-        '''
-        input = input.squeeze(2).permute((1, 0, 2, 3))
-        output = self.model(input)
-        return output.unsqueeze(2).permute((1, 0, 2, 3, 4))
-
-model = Predictor(params).to(cfg.GLOBAL.DEVICE)
+model = Predictor(conv2d_params).to(cfg.GLOBAL.DEVICE)
 # data = torch.randn(5, 4, 1, 480, 480)
 # output = model(data)
 # print(output.size())

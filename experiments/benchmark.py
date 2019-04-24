@@ -16,16 +16,25 @@ import numpy as np
 from nowcasting.hko.evaluation import *
 import copy
 from experiments.net_params import *
+from nowcasting.models.model import Predictor
 
 
 encoder = Encoder(encoder_params[0], encoder_params[1]).to(cfg.GLOBAL.DEVICE)
-forecaster = Forecaster(forecaster_params[0], forecaster_params[1]).to(cfg.GLOBAL.DEVICE)
+forecaster = Forecaster(forecaster_params[0], forecaster_params[1])
+encoder_forecaster1 = EF(encoder, forecaster)
+encoder_forecaster2 = copy.deepcopy(encoder_forecaster1)
+conv2d_network = Predictor(conv2d_params).to(cfg.GLOBAL.DEVICE)
 
-encoder_forecaster1 = EF(encoder, forecaster).to(cfg.GLOBAL.DEVICE)
+encoder_forecaster1 = encoder_forecaster1.to(cfg.GLOBAL.DEVICE)
+encoder_forecaster2 = encoder_forecaster2.to(cfg.GLOBAL.DEVICE)
 encoder_forecaster1.load_state_dict(torch.load('/home/hzzone/save/trajGRU_balanced_mse_mae/models/encoder_forecaster_77000.pth'))
+encoder_forecaster2.load_state_dict(torch.load('/home/hzzone/save/trajGRU_frame_weighted_mse/models/encoder_forecaster_45000.pth'))
+conv2d_network.load_state_dict(torch.load('/home/hzzone/save/conv2d/models/encoder_forecaster_60000.pth'))
 
 models = {
+    'conv2d': conv2d_network,
     'trajGRU_balanced_mse_mae': encoder_forecaster1,
+    'trajGRU_frame_weighted_mse': encoder_forecaster2
 }
 
 with torch.no_grad():

@@ -1,6 +1,7 @@
 import torch
 from nowcasting.config import cfg
 from nowcasting.utils import rainfall_to_pixel
+import numpy as np
 
 class ProbToPixel(object):
 
@@ -26,8 +27,9 @@ class ProbToPixel(object):
         :return:
         '''
         # 分类结果，0 到 classes - 1
-        result = torch.argmax(prediction, dim=2, keepdim=True)
-        prediction_result = torch.zeros_like(result).float()
+        # prediction: S*B*C*H*W
+        result = np.argmax(prediction, axis=2)[:, :, np.newaxis, ...]
+        prediction_result = np.zeros(result.shape, dtype=np.float32)
         if not self.requires_grad:
             for i in range(len(self._middle_value)):
                 prediction_result[result==i] = self._middle_value[i]
@@ -54,6 +56,4 @@ class ProbToPixel(object):
             loss.backward()
             self._middle_value -= lr * self._middle_value.grad
 
-            # prediction_result1: 直接用中间值替代
-            # prediction_result2: 更新中间值
-        return prediction_result.cpu().numpy()
+        return prediction_result

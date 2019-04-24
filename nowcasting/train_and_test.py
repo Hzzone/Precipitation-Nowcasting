@@ -10,7 +10,7 @@ from tensorboardX import SummaryWriter
 import os.path as osp
 import os
 import shutil
-
+import copy
 
 
 
@@ -77,9 +77,8 @@ def train_and_test(encoder_forecaster, optimizer, criterion, lr_scheduler, batch
             # if classification, output: S*B*C*H*W
             # 使用分类问题，需要转化为像素值
             # 使用分类 Loss 的阈值
-            output_numpy = probToPixel(output.detach(), train_label, mask,
+            output_numpy = probToPixel(output.detach().cpu().numpy(), train_label, mask,
                                                             lr_scheduler.get_lr()[0])
-
 
         evaluater.update(train_label_numpy, output_numpy, mask.cpu().numpy())
 
@@ -88,7 +87,7 @@ def train_and_test(encoder_forecaster, optimizer, criterion, lr_scheduler, batch
 
             train_loss = train_loss/test_iteration_interval
 
-            evaluater.save_pkl(osp.join('{}_{}_train'.format(pkl_save_dir, itera)))
+            evaluater.save_pkl(osp.join(pkl_save_dir, '{}_{}_train.pkl'.format(pkl_save_dir, itera)))
             evaluater.clear_all()
 
             with torch.no_grad():
@@ -117,13 +116,12 @@ def train_and_test(encoder_forecaster, optimizer, criterion, lr_scheduler, batch
                     if probToPixel is None:
                         output_numpy = np.clip(output.detach().cpu().numpy(), 0.0, 1.0)
                     else:
-                        # output_numpy = probToPixel(output.detach().cpu().numpy())
-                        output_numpy, output_numpy_update = probToPixel(output.detach(), valid_label, mask, lr_scheduler.get_lr()[0])
+                        output_numpy = probToPixel(output.detach().cpu().numpy(), valid_label, mask, lr_scheduler.get_lr()[0])
 
                     evaluater.update(valid_label_numpy, output_numpy, mask.cpu().numpy())
                 _, _, valid_csi, valid_hss, _, valid_mse, valid_mae, valid_balanced_mse, valid_balanced_mae, _ = evaluater.calculate_stat()
 
-                evaluater.save_pkl(osp.join('{}_{}_val'.format(pkl_save_dir, itera)))
+                evaluater.save_pkl(osp.join(pkl_save_dir, '{}_{}_val.pkl'.format(pkl_save_dir, itera)))
                 evaluater.clear_all()
                 valid_loss = valid_loss/valid_time
 

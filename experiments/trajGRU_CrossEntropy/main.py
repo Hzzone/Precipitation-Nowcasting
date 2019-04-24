@@ -20,9 +20,6 @@ from torch import nn
 
 
 
-### Config
-
-
 # batch_size = cfg.GLOBAL.BATCH_SZIE
 batch_size = 2
 max_iterations = 50000
@@ -32,6 +29,7 @@ test_and_save_checkpoint_iterations = 1000
 LR = 1e-5
 LR_step_size = 20000
 
+### Config
 
 encoder = Encoder(encoder_params[0], encoder_params[1]).to(cfg.GLOBAL.DEVICE)
 
@@ -42,8 +40,10 @@ encoder_forecaster.load_state_dict(torch.load('/home/hzzone/save/trajGRU_balance
 for param in encoder_forecaster.parameters():
     param.requires_grad = False
 
-# thresholds = np.flatnonzero(np.load('../../pixel_counts.npy'))/255.0 # pixel, 0-255
-thresholds = [9, 11, 15, 18, 20, 24, 26, 31, 36, 39, 43, 49, 53, 56, 58]
+# thresholds = [9, 11, 15, 18, 20, 24, 26, 31, 36, 39, 43, 49, 53, 56, 58]
+# thresholds = [9, 18, 26, 36, 37, 46, 50]
+# thresholds = [9, 18, 36, 46, 53]
+thresholds = []
 
 thresholds = thresholds + rainfall_to_dBZ(cfg.HKO.EVALUATION.THRESHOLDS).tolist()
 thresholds = np.array(sorted(thresholds))
@@ -59,20 +59,14 @@ for i, threshold in enumerate(cfg.HKO.EVALUATION.THRESHOLDS):
     weights = weights + (balancing_weights[i + 1] - balancing_weights[i]) * (thresholds >= threshold)
 weights = weights + 1
 weights = np.array([1] + weights.tolist())
-# print(thresholds)
-# print(len(thresholds))
-# print(weights)
 weights = torch.from_numpy(weights).to(cfg.GLOBAL.DEVICE).float()
-# exit(0)
-
-thresholds = rainfall_to_dBZ(thresholds)
 criterion = WeightedCrossEntropyLoss(thresholds, weights).to(cfg.GLOBAL.DEVICE)
 
 folder_name = os.path.split(os.path.dirname(os.path.abspath(__file__)))[-1]
 
-ts = thresholds.tolist()
-middle_value = dBZ_to_pixel(np.array([-10.0] + [(x+y)/2 for x, y in zip(ts, ts[1:]+[60.0])]))
-# probToPixel = ProbToPixel(dBZ_to_pixel(thresholds), requires_grad=False)
+ts = rainfall_to_dBZ(thresholds).tolist()
+middle_value_dbz = np.array([-10.0] + [(x+y)/2 for x, y in zip(ts, ts[1:]+[60.0])])
+middle_value = dBZ_to_pixel(middle_value_dbz).astype(np.float32)
 probToPixel = ProbToPixel(middle_value, requires_grad=False)
 
 train_and_test(encoder_forecaster, optimizer, criterion, exp_lr_scheduler, batch_size, max_iterations, test_iteration_interval, test_and_save_checkpoint_iterations, folder_name, probToPixel)
