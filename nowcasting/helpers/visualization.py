@@ -149,12 +149,14 @@ def save_hko_movie(im_dat, datetime_list, mask_dat=None, save_path="hko.mp4", ma
     mask_color = np.array((0, 170, 160, 150), dtype=np.float32) / 255.0
     if im_dat.dtype == np.float32:
         im_dat = (im_dat * 255).astype(np.uint8)
+    assert im_dat.dtype==np.uint8
     for i in range(im_dat.shape[0]):
         if not masked:
             color_im_dat = cv2.cvtColor(im_dat[i], cv2.COLOR_GRAY2RGBA)
             im = color_im_dat
         else:
             im = im_dat[i] * mask_dat[i]
+            assert im.dtype==np.uint8
             im = cv2.cvtColor(im, cv2.COLOR_GRAY2RGBA)
             # Uncomment the following code to add transparency to the masks
             # color_im_dat = cv2.cvtColor(im_dat[i], cv2.COLOR_GRAY2RGBA)

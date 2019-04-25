@@ -86,3 +86,17 @@ with torch.no_grad():
 
         # evaluator.save_txt_readable(osp.join('./benchmark_stat', name + '.txt'))
         evaluator.save_pkl(osp.join('./benchmark_stat', name + '.pkl'))
+
+for p in os.listdir('benchmark_stat'):
+    e = pickle.load(open(osp.join('benchmark_stat', p), 'rb'))
+    _, _, csi, hss, _, mse, mae, balanced_mse, balanced_mae, _ = e.calculate_stat()
+    print(p.split('.')[0])
+    for i, thresh in enumerate(cfg.HKO.EVALUATION.THRESHOLDS):
+        print('thresh %.1f csi: avarage %.4f, last frame %.4f; hss: avarage %.4f, last frame %.4f;'
+              % (thresh, csi[:, i].mean(), csi[-1, i], hss[:, i].mean(), hss[-1, i]))
+
+    print(('mse: avarage %.2f, last frame %.2f\n' +
+        'mae: avarage %.2f, last frame %.2f\n'+
+        'bmse: avarage %.2f, last frame %.2f\n' +
+        'bmae: avarage %.2f, last frame %.2f\n') % (mse.mean(), mse[-1], mae.mean(), mae[-1],
+              balanced_mse.mean(), balanced_mse[-1], balanced_mae.mean(), balanced_mae[-1]))
