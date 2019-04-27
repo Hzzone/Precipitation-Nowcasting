@@ -1,7 +1,12 @@
-### demo
+### Introduction
+This repo has implemented a pytorch-based encoder-forecaster model with TrajGRU to do precipitation nowcasting. For more information about TrajGRU, please refer to [HKO-7](https://github.com/sxjscience/HKO-7).
+
+### Demo
 ![](demo.gif)
 
-### performance
+### Performance
+The performance on HKO-7 dataset is below.
+
 <table>
 	<tbody>
 		<tr>
@@ -41,7 +46,7 @@
 	</tbody>
 </table>
 
-### download
+### Download
 
 [Dropbox Pretrained Model](https://www.dropbox.com/sh/i5goltdq83dmkvc/AABBe5wTuEQF5j3VSMszVQSaa?dl=0)
 
