@@ -1,6 +1,13 @@
 ### Introduction
 This repo has implemented a pytorch-based encoder-forecaster model with TrajGRU to do precipitation nowcasting. For more information about TrajGRU, please refer to [HKO-7](https://github.com/sxjscience/HKO-7).
 
+### Train
+Firstly you should apply for HKO-7 Dataset from [HKO-7](https://github.com/sxjscience/HKO-7), and modify somelines in config.py to find the dataset path.
+Secondly and last, run `python3 experiments/trajGRU_balanced_mse_mae/main.py`, and then run `python3 experiments/trajGRU_frame_weighted_mse/main.py` since I have finetuned the model on the basis of model trained in last step.
+
+### Environment
+Python 3.6+, PyTorch 1.0 and Ubuntu or macOS.
+
 ### Demo
 ![](demo.gif)
 
