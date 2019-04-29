@@ -52,7 +52,6 @@ class BaseConvRNN(nn.Module):
                              // self._i2h_stride[0] + 1
         self._state_width = (self._width + 2 * self._i2h_pad[1] - i2h_dilate_ksize_w) \
                              // self._i2h_stride[1] + 1
-        print(self._prefix, self._state_height, self._state_width)
         self._curr_states = None
         self._counter = 0
 
