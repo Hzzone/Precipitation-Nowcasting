@@ -101,7 +101,7 @@ convlstm_encoder_params = [
                  kernel_size=3, stride=1, padding=1),
         ConvLSTM(input_channel=192, num_filter=192, b_h_w=(batch_size, 32, 32),
                  kernel_size=3, stride=1, padding=1),
-        ConvLSTM(input_channel=192, num_filter=192, b_h_w=(batch_size, 16, 15),
+        ConvLSTM(input_channel=192, num_filter=192, b_h_w=(batch_size, 16, 16),
                  kernel_size=3, stride=1, padding=1),
     ]
 ]
@@ -118,11 +118,11 @@ convlstm_forecaster_params = [
     ],
 
     [
-        ConvLSTM(input_channel=192, num_filter=192, b_h_w=(batch_size, 16, 15),
+        ConvLSTM(input_channel=192, num_filter=192, b_h_w=(batch_size, 16, 16),
                  kernel_size=3, stride=1, padding=1),
         ConvLSTM(input_channel=192, num_filter=192, b_h_w=(batch_size, 32, 32),
                  kernel_size=3, stride=1, padding=1),
-        ConvLSTM(input_channel=8, num_filter=64, b_h_w=(batch_size, 96, 96),
+        ConvLSTM(input_channel=64, num_filter=64, b_h_w=(batch_size, 96, 96),
                  kernel_size=3, stride=1, padding=1),
     ]
 ]

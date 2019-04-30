@@ -41,12 +41,9 @@ def train_and_test(encoder_forecaster, optimizer, criterion, lr_scheduler, batch
         os.remove(all_scalars_file_name)
     if osp.exists(log_dir):
         shutil.rmtree(log_dir)
-    if osp.exists(pkl_save_dir):
-        shutil.rmtree(pkl_save_dir)
     if osp.exists(model_save_dir):
         shutil.rmtree(model_save_dir)
     os.mkdir(model_save_dir)
-    os.mkdir(pkl_save_dir)
 
     writer = SummaryWriter(log_dir)
 
@@ -87,7 +84,6 @@ def train_and_test(encoder_forecaster, optimizer, criterion, lr_scheduler, batch
 
             train_loss = train_loss/test_iteration_interval
 
-            evaluater.save_pkl(osp.join(pkl_save_dir, '{}_{}_train.pkl'.format(pkl_save_dir, itera)))
             evaluater.clear_all()
 
             with torch.no_grad():
@@ -121,7 +117,6 @@ def train_and_test(encoder_forecaster, optimizer, criterion, lr_scheduler, batch
                     evaluater.update(valid_label_numpy, output_numpy, mask.cpu().numpy())
                 _, _, valid_csi, valid_hss, _, valid_mse, valid_mae, valid_balanced_mse, valid_balanced_mae, _ = evaluater.calculate_stat()
 
-                evaluater.save_pkl(osp.join(pkl_save_dir, '{}_{}_val.pkl'.format(pkl_save_dir, itera)))
                 evaluater.clear_all()
                 valid_loss = valid_loss/valid_time
 

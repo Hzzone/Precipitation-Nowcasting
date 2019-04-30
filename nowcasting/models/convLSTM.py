@@ -10,13 +10,13 @@ class ConvLSTM(nn.Module):
                                kernel_size=kernel_size,
                                stride=stride,
                                padding=padding)
-        _, self._state_height, self._state_width = b_h_w
-        self.Wci = torch.zeros(1, num_filter, self._state_height, self._state_width)
-        self.Wcf = torch.zeros(1, num_filter, self._state_height, self._state_width)
-        self.Wco = torch.zeros(1, num_filter, self._state_height, self._state_width)
-        self.Wci.requires_grd = True
-        self.Wcf.requires_grd = True
-        self.Wco.requires_grd = True
+        self._batch_size, self._state_height, self._state_width = b_h_w
+        self.Wci = torch.zeros(1, num_filter, self._state_height, self._state_width).to(cfg.GLOBAL.DEVICE)
+        self.Wcf = torch.zeros(1, num_filter, self._state_height, self._state_width).to(cfg.GLOBAL.DEVICE)
+        self.Wco = torch.zeros(1, num_filter, self._state_height, self._state_width).to(cfg.GLOBAL.DEVICE)
+        self.Wci.requires_grad = True
+        self.Wcf.requires_grad = True
+        self.Wco.requires_grad = True
         self._input_channel = input_channel
         self._num_filter = num_filter
 
@@ -24,10 +24,6 @@ class ConvLSTM(nn.Module):
     # inputs: S*B*C*H*W
     def forward(self, inputs=None, states=None, seq_len=cfg.HKO.BENCHMARK.IN_LEN):
 
-        # initial inputs
-        if inputs is None:
-            inputs = torch.zeros((inputs.size(1), self._input_channel, self._state_height,
-                                  self._state_width), dtype=torch.float).to(cfg.GLOBAL.DEVICE)
         if states is None:
             c = torch.zeros((inputs.size(1), self._num_filter, self._state_height,
                                   self._state_width), dtype=torch.float).to(cfg.GLOBAL.DEVICE)
@@ -37,8 +33,14 @@ class ConvLSTM(nn.Module):
             h, c = states
 
         outputs = []
-        for i in range(seq_len):
-            cat_x = torch.cat([inputs, h], dim=1)
+        for index in range(seq_len):
+            # initial inputs
+            if inputs is None:
+                x = torch.zeros((self._batch_size, self._input_channel, self._state_height,
+                                      self._state_width), dtype=torch.float).to(cfg.GLOBAL.DEVICE)
+            else:
+                x = inputs[index, ...]
+            cat_x = torch.cat([x, h], dim=1)
             conv_x = self._conv(cat_x)
 
             i, f, tmp_c, o = torch.chunk(conv_x, 4, dim=1)
