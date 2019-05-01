@@ -18,6 +18,8 @@ import copy
 from experiments.net_params import *
 from nowcasting.models.model import Predictor
 from experiments.rover_and_last_frame import LastFrame, Rover
+import time
+import pickle
 
 
 encoder = Encoder(encoder_params[0], encoder_params[1]).to(cfg.GLOBAL.DEVICE)
@@ -32,7 +34,15 @@ encoder_forecaster1.load_state_dict(torch.load('/home/hzzone/save/trajGRU_balanc
 encoder_forecaster2.load_state_dict(torch.load('/home/hzzone/save/trajGRU_frame_weighted_mse/models/encoder_forecaster_45000.pth'))
 conv2d_network.load_state_dict(torch.load('/home/hzzone/save/conv2d/models/encoder_forecaster_60000.pth'))
 
+convlstm_encoder = Encoder(convlstm_encoder_params[0], convlstm_encoder_params[1]).to(cfg.GLOBAL.DEVICE)
+
+convlstm_forecaster = Forecaster(convlstm_forecaster_params[0], convlstm_forecaster_params[1]).to(cfg.GLOBAL.DEVICE)
+
+convlstm_encoder_forecaster = EF(convlstm_encoder, convlstm_forecaster).to(cfg.GLOBAL.DEVICE)
+convlstm_encoder_forecaster.load_state_dict(torch.load('/home/hzzone/save/convLSTM_balacned_mse_mae/models/encoder_forecaster_64000.pth'))
+
 models = OrderedDict({
+    'convLSTM_balacned_mse_mae': convlstm_encoder_forecaster,
     'conv2d': conv2d_network,
     'trajGRU_balanced_mse_mae': encoder_forecaster1,
     'trajGRU_frame_weighted_mse': encoder_forecaster2,
@@ -40,6 +50,7 @@ models = OrderedDict({
     'rover_nonlinear': Rover()
 })
 
+model_run_avarage_time = dict()
 with torch.no_grad():
     for name, model in models.items():
         is_deeplearning_model = (torch.nn.Module in model.__class__.__bases__)
@@ -51,10 +62,11 @@ with torch.no_grad():
                                      sample_mode="sequent",
                                      seq_len=IN_LEN + OUT_LEN,
                                      stride=cfg.HKO.BENCHMARK.STRIDE)
+        model_run_avarage_time[name] = 0.0
         valid_time = 0
         while not hko_iter.use_up:
             valid_batch, valid_mask, sample_datetimes, _ = \
-                hko_iter.sample(batch_size=batch_size)
+                hko_iter.sample(batch_size=1)
             if valid_batch.shape[1] == 0:
                 break
             if not cfg.HKO.EVALUATION.VALID_DATA_USE_UP and valid_time > cfg.HKO.EVALUATION.VALID_TIME:
@@ -68,7 +80,9 @@ with torch.no_grad():
             if is_deeplearning_model:
                 valid_data = torch.from_numpy(valid_data).to(cfg.GLOBAL.DEVICE)
 
+            start = time.time()
             output = model(valid_data)
+            model_run_avarage_time[name] += time.time() - start
 
             if is_deeplearning_model:
                 output = output.cpu().numpy()
@@ -78,14 +92,11 @@ with torch.no_grad():
             evaluator.update(valid_label, output, mask)
 
             valid_time += 1
-            # print(valid_time)
-        #     if valid_time%1000==0:
-        #         print('{} '.format(valid_time), end='')
-        #
-        # print()
-
-        # evaluator.save_txt_readable(osp.join('./benchmark_stat', name + '.txt'))
+        model_run_avarage_time[name] /= valid_time
         evaluator.save_pkl(osp.join('./benchmark_stat', name + '.pkl'))
+
+with open('./benchmark_stat/model_run_avarage_time.pkl', 'wb') as f:
+    pickle.dump(model_run_avarage_time, f)
 
 for p in os.listdir('benchmark_stat'):
     e = pickle.load(open(osp.join('benchmark_stat', p), 'rb'))
