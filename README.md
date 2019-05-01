@@ -1,7 +1,7 @@
 ### Introduction
 This repo has implemented a pytorch-based encoder-forecaster model with RNNs including (TrajGRU, ConvLSTM) to do precipitation nowcasting. For more information about TrajGRU, please refer to [HKO-7](https://github.com/sxjscience/HKO-7).
 
-If you are interested with my implementation of ConvLSTM and TrajGRU, please see [ConvLSTM](https://github.com/Hzzone/Precipitation-Nowcasting/blob/master/nowcasting/models/convLSTM.py) and [TrajGRU](https://github.com/Hzzone/Precipitation-Nowcasting/blob/master/nowcasting/models/trajGRU.py). It is assumed that the input should be <img src="https://latex.codecogs.com/gif.latex?S*B*C*H*W" title="S*B*C*H*W" />. All of my implementation have proved to be effective in HKO-7 Dataset. Hopefully it helps your research.
+If you are interested with my implementation of ConvLSTM and TrajGRU, please see [ConvLSTM](https://github.com/Hzzone/Precipitation-Nowcasting/blob/master/nowcasting/models/convLSTM.py) and [TrajGRU](https://github.com/Hzzone/Precipitation-Nowcasting/blob/master/nowcasting/models/trajGRU.py). It is assumed that the input shape should be <img src="https://latex.codecogs.com/gif.latex?S*B*C*H*W" title="S*B*C*H*W" />. All of my implementation have been proved to be effective in HKO-7 Dataset. Hopefully it helps your research.
 
 ### Train
 Firstly you should apply for HKO-7 Dataset from [HKO-7](https://github.com/sxjscience/HKO-7), and modify somelines in config.py to find the dataset path.
@@ -58,4 +58,22 @@ The performance on HKO-7 dataset is below.
 ### Download
 
 [Dropbox Pretrained Model](https://www.dropbox.com/sh/i5goltdq83dmkvc/AABBe5wTuEQF5j3VSMszVQSaa?dl=0)
+
+### Citation
+
+```
+@inproceedings{xingjian2017deep,
+    title={Deep learning for precipitation nowcasting: a benchmark and a new model},
+    author={Shi, Xingjian and Gao, Zhihan and Lausen, Leonard and Wang, Hao and Yeung, Dit-Yan and Wong, Wai-kin and Woo, Wang-chun},
+    booktitle={Advances in Neural Information Processing Systems},
+    year={2017}
+}
+@inproceedings{xingjian2015convolutional,
+  title={Convolutional LSTM network: A machine learning approach for precipitation nowcasting},
+  author={Xingjian, SHI and Chen, Zhourong and Wang, Hao and Yeung, Dit-Yan and Wong, Wai-Kin and Woo, Wang-chun},
+  booktitle={Advances in neural information processing systems},
+  pages={802--810},
+  year={2015}
+}
+``
 
