@@ -36,7 +36,7 @@ class ConvLSTM(nn.Module):
         for index in range(seq_len):
             # initial inputs
             if inputs is None:
-                x = torch.zeros((self._batch_size, self._input_channel, self._state_height,
+                x = torch.zeros((h.size(0), self._input_channel, self._state_height,
                                       self._state_width), dtype=torch.float).to(cfg.GLOBAL.DEVICE)
             else:
                 x = inputs[index, ...]
