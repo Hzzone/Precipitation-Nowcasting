@@ -11,12 +11,12 @@ class ConvLSTM(nn.Module):
                                stride=stride,
                                padding=padding)
         self._batch_size, self._state_height, self._state_width = b_h_w
-        self.Wci = torch.zeros(1, num_filter, self._state_height, self._state_width).to(cfg.GLOBAL.DEVICE)
-        self.Wcf = torch.zeros(1, num_filter, self._state_height, self._state_width).to(cfg.GLOBAL.DEVICE)
-        self.Wco = torch.zeros(1, num_filter, self._state_height, self._state_width).to(cfg.GLOBAL.DEVICE)
-        self.Wci.requires_grad = True
-        self.Wcf.requires_grad = True
-        self.Wco.requires_grad = True
+        # if using requires_grad flag, torch.save will not save parameters in deed although it may be updated every epoch.
+        # Howerver, if you use declare an optimizer like Adam(model.parameters()),
+        # parameters will not be updated forever.
+        self.Wci = nn.Parameter(torch.zeros(1, num_filter, self._state_height, self._state_width)).to(cfg.GLOBAL.DEVICE)
+        self.Wcf = nn.Parameter(torch.zeros(1, num_filter, self._state_height, self._state_width)).to(cfg.GLOBAL.DEVICE)
+        self.Wco = nn.Parameter(torch.zeros(1, num_filter, self._state_height, self._state_width)).to(cfg.GLOBAL.DEVICE)
         self._input_channel = input_channel
         self._num_filter = num_filter
 
